@@ -2,6 +2,10 @@ import streamlit as st
 import json
 import os
 from datetime import datetime, timedelta
+import pytz  # Para fuso horário
+
+# ================= FUSO HORÁRIO =================
+BRASILIA = pytz.timezone('America/Sao_Paulo')
 
 # ================= ARQUIVOS =================
 ARQ_AGENDAMENTOS = "agendamentos.json"
@@ -24,7 +28,7 @@ def remover_agendamento(index):
         salvar_agendamentos(agendamentos)
 
 def gerar_datas_disponiveis():
-    hoje = datetime.now()
+    hoje = datetime.now(BRASILIA)
     datas = []
     for i in range(7):
         dia = hoje + timedelta(days=i)
@@ -47,13 +51,14 @@ def gerar_horarios(dia):
 
 def filtrar_agendamentos_validos(agendamentos):
     """Mantém só os agendamentos cuja hora ainda não passou + 15 minutos"""
-    agora = datetime.now()
+    agora = datetime.now(BRASILIA)
     ag_validos = []
     for a in agendamentos:
         try:
             hora_parts = a["hora"].split(":")
             dt = datetime.strptime(a["data"], "%d/%m/%Y")
-            dt = dt.replace(hour=int(hora_parts[0]), minute=int(hora_parts[1]))
+            # Adiciona hora e fuso horário de Brasília
+            dt = BRASILIA.localize(dt.replace(hour=int(hora_parts[0]), minute=int(hora_parts[1]), second=0))
             if agora <= dt + timedelta(minutes=15):
                 ag_validos.append(a)
         except:
@@ -68,14 +73,12 @@ st.markdown(
     """
     <style>
     .stApp {
-        background-image: url("fundo.jpg");  /* coloque aqui o caminho da sua imagem */
+        background-image: url("fundo.jpg");
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         background-attachment: fixed;
     }
-
-    /* Ajuste dos botões */
     div.stButton > button {
         background-color: #4CAF50;  
         color: white;
@@ -88,8 +91,6 @@ st.markdown(
     div.stButton > button:hover {
         background-color: #45a049;
     }
-
-    /* Ajuste de caixas de texto */
     .stTextInput>div>div>input {
         border-radius: 10px;
         height: 35px;
@@ -143,11 +144,12 @@ elif st.session_state.etapa == "escolher_dia":
 elif st.session_state.etapa == "escolher_horario":
     st.subheader("Escolha o horário:")
     if st.session_state.dia_escolhido == "Hoje":
-        dia = datetime.now()
+        dia = datetime.now(BRASILIA)
     elif st.session_state.dia_escolhido == "Amanhã":
-        dia = datetime.now() + timedelta(days=1)
+        dia = datetime.now(BRASILIA) + timedelta(days=1)
     else:
         dia = datetime.strptime(st.session_state.dia_escolhido, "%d/%m/%Y")
+        dia = BRASILIA.localize(dia)
     data_str = dia.strftime("%d/%m/%Y")
     horarios = gerar_horarios(dia)
     agendamentos = carregar_agendamentos()
@@ -191,7 +193,6 @@ elif st.session_state.etapa == "painel_dono":
         if not agendamentos_validos:
             st.info("Nenhum agendamento válido no momento.")
         else:
-            remover_index = None
             for i, a in enumerate(agendamentos_validos):
                 st.markdown(f"""
                 <div style='border:1px solid #ddd; padding:10px; margin-bottom:5px; border-radius:10px; box-shadow: 2px 2px 5px #ccc'>
