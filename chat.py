@@ -2,13 +2,13 @@ import streamlit as st
 import json
 import os
 from datetime import datetime, timedelta
-import pytz  # Para fuso horário
-
-# ================= FUSO HORÁRIO =================
-BRASILIA = pytz.timezone('America/Sao_Paulo')
+import pytz
 
 # ================= ARQUIVOS =================
 ARQ_AGENDAMENTOS = "agendamentos.json"
+
+# ================= FUSO HORÁRIO =================
+BRASILIA = pytz.timezone('America/Sao_Paulo')
 
 # ================= FUNÇÕES =================
 def carregar_agendamentos():
@@ -50,14 +50,12 @@ def gerar_horarios(dia):
     return horarios
 
 def filtrar_agendamentos_validos(agendamentos):
-    """Mantém só os agendamentos cuja hora ainda não passou + 15 minutos"""
     agora = datetime.now(BRASILIA)
     ag_validos = []
     for a in agendamentos:
         try:
             hora_parts = a["hora"].split(":")
             dt = datetime.strptime(a["data"], "%d/%m/%Y")
-            # Adiciona hora e fuso horário de Brasília
             dt = BRASILIA.localize(dt.replace(hour=int(hora_parts[0]), minute=int(hora_parts[1]), second=0))
             if agora <= dt + timedelta(minutes=15):
                 ag_validos.append(a)
@@ -69,36 +67,33 @@ def filtrar_agendamentos_validos(agendamentos):
 st.set_page_config(page_title="IA Inteligente - Agendamento", page_icon="🤖")
 
 # ======== FUNDO DA PÁGINA ========
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-image: url("fundo.jpg");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }
-    div.stButton > button {
-        background-color: #4CAF50;  
-        color: white;
-        height: 50px;
-        width: 200px;
-        border-radius: 10px;
-        font-size: 18px;
-        margin: 5px;
-    }
-    div.stButton > button:hover {
-        background-color: #45a049;
-    }
-    .stTextInput>div>div>input {
-        border-radius: 10px;
-        height: 35px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+<style>
+.stApp {
+    background-image: url("fundo.jpg");  
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+div.stButton > button {
+    background-color: #4CAF50;  
+    color: white;
+    height: 50px;
+    width: 200px;
+    border-radius: 10px;
+    font-size: 18px;
+    margin: 5px;
+}
+div.stButton > button:hover {
+    background-color: #45a049;
+}
+.stTextInput>div>div>input {
+    border-radius: 10px;
+    height: 35px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.title("🤖 Barbearia do Coiffer ")
 
@@ -113,32 +108,39 @@ if "dono_logado" not in st.session_state:
 # ================= LOGIN CLIENTE =================
 if st.session_state.etapa == "login_cliente":
     st.subheader("💬 Bem-vindo! Para agendamento, digite seu nome:")
-    nome = st.text_input("Seu nome:")
-    if st.button("Continuar"):
-        if nome.strip() != "":
-            st.session_state.nome_cliente = nome.strip()
-            st.session_state.etapa = "menu_cliente"
-        else:
-            st.warning("Digite um nome válido!")
+    with st.form("form_login_cliente"):
+        nome = st.text_input("Seu nome:")
+        enviar_login = st.form_submit_button("Continuar")
+        if enviar_login:
+            if nome.strip() != "":
+                st.session_state.nome_cliente = nome.strip()
+                st.session_state.etapa = "menu_cliente"
+            else:
+                st.warning("Digite um nome válido!")
 
 # ================= MENU CLIENTE =================
 elif st.session_state.etapa == "menu_cliente":
     st.subheader(f"Olá, {st.session_state.nome_cliente}! O que deseja fazer?")
-    col1, col2 = st.columns(2)
-    if col1.button("✂️ Marcar corte"):
-        st.session_state.etapa = "escolher_dia"
-    if col2.button("💈 Outros serviços"):
-        st.info("Ainda em desenvolvimento!")
+    with st.form("form_menu_cliente"):
+        col1, col2 = st.columns(2)
+        marcar_corte = col1.form_submit_button("✂️ Marcar corte")
+        outros_servicos = col2.form_submit_button("💈 Outros serviços")
+        if marcar_corte:
+            st.session_state.etapa = "escolher_dia"
+        if outros_servicos:
+            st.info("Ainda em desenvolvimento!")
 
 # ================= ESCOLHER DIA =================
 elif st.session_state.etapa == "escolher_dia":
     st.subheader("Escolha o dia do agendamento:")
     datas = gerar_datas_disponiveis()
     opcoes = ["Hoje", "Amanhã"] + [d.strftime("%d/%m/%Y") for d in datas[2:]]
-    dia_escolhido = st.selectbox("Selecione:", opcoes)
-    if st.button("Próximo"):
-        st.session_state.dia_escolhido = dia_escolhido
-        st.session_state.etapa = "escolher_horario"
+    with st.form("form_dia"):
+        dia_escolhido = st.selectbox("Selecione:", opcoes)
+        enviar_dia = st.form_submit_button("Próximo")
+        if enviar_dia:
+            st.session_state.dia_escolhido = dia_escolhido
+            st.session_state.etapa = "escolher_horario"
 
 # ================= ESCOLHER HORÁRIO =================
 elif st.session_state.etapa == "escolher_horario":
@@ -155,39 +157,66 @@ elif st.session_state.etapa == "escolher_horario":
     agendamentos = carregar_agendamentos()
     horarios_ocupados = [a["hora"] for a in agendamentos if a["data"] == data_str]
     horarios_disponiveis = [h for h in horarios if h not in horarios_ocupados]
+
     if not horarios_disponiveis:
         st.warning("Nenhum horário disponível nesse dia.")
     else:
-        horario = st.selectbox("Horários disponíveis:", horarios_disponiveis)
-        if st.button("Confirmar agendamento"):
-            agendamentos.append({
-                "nome": st.session_state.nome_cliente,
-                "data": data_str,
-                "hora": horario,
-                "servico": "Corte",
-                "visualizado": False
-            })
-            salvar_agendamentos(agendamentos)
-            st.success(f"Agendamento confirmado! {data_str} às {horario}")
-            st.session_state.etapa = "menu_cliente"
+        with st.form("form_horario"):
+            horario = st.selectbox("Horários disponíveis:", horarios_disponiveis)
+            enviar_horario = st.form_submit_button("Confirmar agendamento")
+            if enviar_horario:
+                agendamentos.append({
+                    "nome": st.session_state.nome_cliente,
+                    "data": data_str,
+                    "hora": horario,
+                    "servico": "Corte",
+                    "visualizado": False
+                })
+                salvar_agendamentos(agendamentos)
+                st.success(f"Agendamento confirmado! {data_str} às {horario}")
+                st.session_state.etapa = "menu_cliente"
 
 # ================= ÁREA DO DONO =================
 elif st.session_state.etapa == "painel_dono":
     if not st.session_state.dono_logado:
         st.subheader("🔐 Login do Dono")
-        usuario = st.text_input("Usuário:")
-        senha = st.text_input("Senha:", type="password")
-        if st.button("Entrar"):
-            if usuario == "coiffer" and senha == "7070":
-                st.session_state.dono_logado = True
-                st.success("Login bem-sucedido!")
-            else:
-                st.error("Usuário ou senha incorretos!")
+        with st.form("form_login_dono"):
+            usuario = st.text_input("Usuário:")
+            senha = st.text_input("Senha:", type="password")
+            entrar = st.form_submit_button("Entrar")
+            if entrar:
+                if usuario == "coiffer" and senha == "707060":
+                    st.session_state.dono_logado = True
+                    st.success("Login bem-sucedido!")
+                else:
+                    st.error("Usuário ou senha incorretos!")
     else:
         st.subheader("🔐 Área do Dono - Agendamentos")
+
+        # Botão atualizar agendamentos
+        if st.button("🔄 Atualizar Agendamentos"):
+            agendamentos = carregar_agendamentos()
+            agendamentos_validos = filtrar_agendamentos_validos(agendamentos)
+            salvar_agendamentos(agendamentos_validos)
+            st.success("Agendamentos atualizados!")
+
+        # Carrega agendamentos
         agendamentos = carregar_agendamentos()
         agendamentos_validos = filtrar_agendamentos_validos(agendamentos)
         salvar_agendamentos(agendamentos_validos)
+
+        # ======= ORDENAR POR DATA E HORA =======
+        def get_data_hora(a):
+            try:
+                dt = datetime.strptime(a["data"], "%d/%m/%Y")
+                hora_parts = a["hora"].split(":")
+                dt = dt.replace(hour=int(hora_parts[0]), minute=int(hora_parts[1]))
+                return dt
+            except:
+                return datetime.max
+
+        agendamentos_validos.sort(key=get_data_hora)
+
         st.markdown(f"**📝 Agendamentos na fila: {len(agendamentos_validos)}**")
         st.markdown("---")
         if not agendamentos_validos:
