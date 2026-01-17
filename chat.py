@@ -188,6 +188,9 @@ elif st.session_state.etapa == "painel_dono":
                 st.error("Usuário ou senha incorretos!")
     else:
         st.subheader("📋 Agendamentos")
+        if st.button("🔄 Atualizar"):
+            st.rerun()
+
 
         ag = filtrar_agendamentos_validos(carregar_agendamentos())
         ag.sort(key=lambda a: datetime.strptime(a["data"]+" "+a["hora"], "%d/%m/%Y %H:%M"))
