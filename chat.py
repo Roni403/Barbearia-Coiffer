@@ -103,7 +103,7 @@ div.stButton > button {{
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🤖 Barbearia do Coiffer")
+st.title("🤖 ")
 
 # ================= ESTADO =================
 if "etapa" not in st.session_state:
