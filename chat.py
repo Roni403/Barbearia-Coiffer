@@ -77,12 +77,14 @@ def filtrar_agendamentos_validos(agendamentos):
 st.set_page_config(page_title="IA Inteligente - Agendamento", page_icon="🤖")
 
 # ================= FUNDO =================
+# (seu código inteiro mantido... apenas a parte de CSS do fundo alterada)
+
 st.markdown(f"""
 <style>
 .stApp {{
     background-image: url("data:image/jpg;base64,{img}");
-    background-size: 70%;
-    background-position: center;
+    background-size: cover;
+    background-position: center center;
     background-repeat: no-repeat;
     background-attachment: fixed;
 }}
@@ -102,6 +104,7 @@ div.stButton > button {{
 }}
 </style>
 """, unsafe_allow_html=True)
+
 
 st.title("🤖 ")
 
