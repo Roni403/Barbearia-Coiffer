@@ -1,1 +1,18 @@
-[]
+[
+    {
+        "nome": "jesse",
+        "data": "22/01/2026",
+        "hora": "20:00",
+        "funcionario": "coiffer",
+        "status": "sugerido",
+        "sugestao_hora": "19:30"
+    },
+    {
+        "nome": "Pereira",
+        "email": "Roni@gmail.com",
+        "data": "22/01/2026",
+        "hora": "19:30",
+        "funcionario": "Matheus",
+        "status": "aceito"
+    }
+]
